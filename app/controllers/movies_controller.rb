@@ -9,13 +9,32 @@ class MoviesController < ApplicationController
   def index
     @all_ratings = Movie.all_ratings
     
-    if params[:ratings].present?
-      @ratings_to_show = params[:ratings].keys
-    else
-      @ratings_to_show = @all_ratings
+    redirect = false
+    
+    if params[:sort_by]
+      @sort_by = params[:sort_by]
+      session[:sort_by] = @sort_by
+    elsif session[:sort_by]
+      @sort_by = session[:sort_by]
+      redirect = true
     end
     
-    @sort_by = params[:sort_by]
+    if params[:ratings]
+      @ratings_to_show = params[:ratings].keys
+      session[:ratings] = params[:ratings]
+    elsif session[:ratings]
+      @ratings_to_show = session[:ratings].keys
+      redirect = true
+    else
+      @ratings_to_show = @all_ratings
+      session[:ratings] = Hash[@all_ratings.map {|rating| [rating, "1"]}]
+    end
+    
+    if redirect
+      flash.keep
+      redirect_to movies_path(sort_by: @sort_by, ratings: session[:ratings])
+      return
+    end
     
     @movies = Movie.with_ratings(@ratings_to_show)
     
